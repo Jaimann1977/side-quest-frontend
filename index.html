@@ -238,6 +238,47 @@
             font-style: italic;
         }
 
+        .card-delete-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 36px;
+            height: 36px;
+            background: rgba(139, 21, 56, 0.95);
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 1.25rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .card-delete-btn:hover {
+            background: var(--burgundy-dark);
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 4px 12px rgba(139, 21, 56, 0.8);
+        }
+
+        .admin-badge {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(139, 21, 56, 0.95);
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
         .modal {
             position: fixed;
             top: 0;
@@ -795,12 +836,36 @@
             }
         };
 
+        const deleteCard = async (cardId) => {
+            try {
+                const response = await fetch(`${API_URL}/cards/${cardId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete card');
+                return true;
+            } catch (error) {
+                console.error('Error deleting card:', error);
+                throw error;
+            }
+        };
+
         // Components
-        function Card({ card, onClick }) {
+        function Card({ card, onClick, isAdminMode, onDelete }) {
             const daysRemaining = Math.ceil((new Date(card.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+            
+            const handleDelete = (e) => {
+                e.stopPropagation();
+                if (confirm(`Delete "${card.businessName}"? This cannot be undone.`)) {
+                    onDelete(card.id);
+                }
+            };
             
             return (
                 <div className="card" onClick={onClick}>
+                    {isAdminMode && (
+                        <button className="card-delete-btn" onClick={handleDelete}>×</button>
+                    )}
                     {card.coverImage && (
                         <img 
                             src={card.coverImage} 
@@ -1105,6 +1170,9 @@
             const [selectedCard, setSelectedCard] = useState(null);
             const [showForm, setShowForm] = useState(false);
             const [isLoading, setIsLoading] = useState(true);
+            
+            // Check for admin mode via URL parameter
+            const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
 
             useEffect(() => {
                 const fetchCards = async () => {
@@ -1127,8 +1195,23 @@
                 }
             };
 
+            const handleDeleteCard = async (cardId) => {
+                try {
+                    await deleteCard(cardId);
+                    setCards(cards.filter(card => card.id !== cardId));
+                } catch (error) {
+                    alert('Failed to delete card. Please try again.');
+                }
+            };
+
             return (
                 <>
+                    {isAdminMode && (
+                        <div className="admin-badge">
+                            🛡️ ADMIN MODE
+                        </div>
+                    )}
+                    
                     <header className="header">
                         <div className="header-content">
                             <img src="./mtlogo_long.png" alt="Musictoday" className="logo" />
@@ -1156,6 +1239,8 @@
                                         key={card.id} 
                                         card={card} 
                                         onClick={() => setSelectedCard(card)}
+                                        isAdminMode={isAdminMode}
+                                        onDelete={handleDeleteCard}
                                     />
                                 ))}
                             </div>
