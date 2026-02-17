@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Side Quest - Employee Showcase</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        :root {
+            --burgundy: #8B1538;
+            --burgundy-dark: #6B0F2A;
+            --burgundy-light: #A31D45;
+            --charcoal: #1a1a1a;
+            --cream: #F5F1E8;
+            --gold: #D4AF37;
+            --gold-light: #F0D87B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a1a1a 100%);
+            color: var(--cream);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139, 21, 56, 0.03) 2px, rgba(139, 21, 56, 0.03) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139, 21, 56, 0.03) 2px, rgba(139, 21, 56, 0.03) 4px);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            background: linear-gradient(180deg, rgba(0,0,0,0.95) 0%, rgba(26,26,26,0.9) 100%);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 20px rgba(139, 21, 56, 0.3);
+            position: relative;
+            z-index: 10;
+            border-bottom: 2px solid var(--burgundy);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-title {
+            font-family: 'Cinzel Decorative', cursive;
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 900;
+            color: var(--gold);
+            text-shadow: 
+                0 0 30px rgba(212, 175, 55, 0.5),
+                0 0 60px rgba(212, 175, 55, 0.3),
+                3px 3px 0 var(--burgundy-dark),
+                6px 6px 0 rgba(107, 15, 42, 0.5);
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            from {
+                text-shadow: 
+                    0 0 30px rgba(212, 175, 55, 0.5),
+                    0 0 60px rgba(212, 175, 55, 0.3),
+                    3px 3px 0 var(--burgundy-dark),
+                    6px 6px 0 rgba(107, 15, 42, 0.5);
+            }
+            to {
+                text-shadow: 
+                    0 0 40px rgba(212, 175, 55, 0.7),
+                    0 0 80px rgba(212, 175, 55, 0.4),
+                    3px 3px 0 var(--burgundy-dark),
+                    6px 6px 0 rgba(107, 15, 42, 0.5);
+            }
+        }
+
+        .hero-subtitle {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            color: var(--gold-light);
+            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 2px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .add-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy-dark) 100%);
+            border: 3px solid var(--gold);
+            color: var(--gold);
+            font-size: 2rem;
+            cursor: pointer;
+            box-shadow: 
+                0 4px 20px rgba(139, 21, 56, 0.6),
+                0 0 30px rgba(212, 175, 55, 0.3);
+            z-index: 100;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-button:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 
+                0 6px 30px rgba(139, 21, 56, 0.8),
+                0 0 50px rgba(212, 175, 55, 0.5);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .card {
+            background: linear-gradient(145deg, rgba(26, 26, 26, 0.95) 0%, rgba(42, 26, 26, 0.95) 100%);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            animation: cardAppear 0.6s ease-out backwards;
+        }
+
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: var(--gold);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.7),
+                0 0 30px rgba(212, 175, 55, 0.3);
+        }
+
+        .card-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            background: linear-gradient(135deg, rgba(139, 21, 56, 0.2) 0%, rgba(107, 15, 42, 0.3) 100%);
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .card-employee {
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+
+        .card-description {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--cream);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-expiry {
+            font-size: 0.75rem;
+            color: rgba(212, 175, 55, 0.6);
+            margin-top: 1rem;
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: modalFadeIn 0.3s ease-out;
+            backdrop-filter: blur(5px);
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* modal-content defined in split layout section below */
+
+        @keyframes modalContentSlide {
+            from {
+                transform: translateY(50px) scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 38px;
+            height: 38px;
+            background: rgba(15,15,15,0.85);
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 1.4rem;
+            cursor: pointer;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            transform: rotate(90deg);
+            background: var(--burgundy-dark);
+        }
+
+        /* NEW: Split layout */
+        .modal-content {
+            display: flex;
+            flex-direction: row;
+            background: #111;
+            border: 2px solid var(--gold);
+            border-radius: 16px;
+            max-width: 960px;
+            width: 92vw;
+            max-height: 90vh;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 40px rgba(212,175,55,0.2);
+            animation: modalContentSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Left image panel */
+        .modal-carousel-panel {
+            position: relative;
+            flex: 0 0 58%;
+            min-height: 480px;
+            background: #000;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* Blurred backdrop fills the panel */
+        .carousel-backdrop {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(22px) brightness(0.4);
+            transform: scale(1.1);
+            transition: background-image 0.3s ease;
+        }
+
+        /* Real image on top, natural aspect ratio */
+        .carousel-image {
+            position: relative;
+            z-index: 2;
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Arrow buttons */
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 5;
+            width: 42px;
+            height: 42px;
+            background: rgba(15, 15, 15, 0.7);
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            color: var(--gold);
+            font-size: 2rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+
+        .carousel-arrow:hover {
+            background: rgba(139, 21, 56, 0.85);
+            border-color: var(--gold);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .carousel-arrow.prev { left: 0.75rem; }
+        .carousel-arrow.next { right: 0.75rem; }
+
+        /* Dot indicators */
+        .carousel-indicators {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+
+        .carousel-indicator {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.15);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .carousel-indicator.active {
+            background: var(--gold);
+            border-color: var(--gold);
+            transform: scale(1.3);
+        }
+
+        /* Right info panel */
+        .modal-info-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.75rem 2rem 2rem;
+            overflow-y: auto;
+            background: linear-gradient(160deg, #1c1c1c 0%, #1e1212 100%);
+            border-left: 1px solid rgba(212,175,55,0.2);
+        }
+
+        .modal-title {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--gold);
+            margin-bottom: 0.9rem;
+            line-height: 1.3;
+            text-transform: uppercase;
+        }
+
+        .modal-employee-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 999px;
+            padding: 0.4rem 1rem;
+            color: var(--gold);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 1.6rem;
+            width: fit-content;
+        }
+
+        .modal-employee-pill::before {
+            content: '⚔';
+            font-size: 0.8rem;
+        }
+
+        .modal-section-label {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 0.7rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(212,175,55,0.25);
+        }
+
+        .modal-description {
+            font-size: 0.98rem;
+            line-height: 1.85;
+            color: #d8d8d8;
+        }
+
+        /* Mobile: stack */
+        @media (max-width: 640px) {
+            .modal-content { flex-direction: column; }
+            .modal-carousel-panel { flex: 0 0 auto; min-height: 260px; max-height: 42vh; }
+            .modal-info-panel { border-left: none; border-top: 1px solid rgba(212,175,55,0.2); }
+        }
+
+        .form-modal {
+            padding: 2rem;
+            overflow-y: auto;
+            max-height: 85vh;
+        }
+
+        /* Form modal overrides the split card-modal layout */
+        .form-modal-content {
+            display: block !important;
+            max-width: 680px !important;
+            overflow: hidden !important;
+            background: linear-gradient(145deg, rgba(26,26,26,0.98) 0%, rgba(42,26,26,0.98) 100%) !important;
+        }
+
+        .form-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--gold);
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-radius: 8px;
+            color: var(--cream);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .char-count {
+            font-size: 0.8rem;
+            color: rgba(212, 175, 55, 0.6);
+            text-align: right;
+            margin-top: 0.25rem;
+        }
+
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .file-input-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy-dark) 100%);
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            color: var(--gold);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            align-self: flex-start;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(139, 21, 56, 0.5);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .file-preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 2px solid var(--gold);
+        }
+
+        .file-preview-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .file-remove {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 24px;
+            height: 24px;
+            background: var(--burgundy);
+            color: var(--gold);
+            border: none;
+            border-bottom-left-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .ai-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: linear-gradient(135deg, rgba(139, 21, 56, 0.3) 0%, rgba(107, 15, 42, 0.3) 100%);
+            border: 1px solid var(--gold);
+            border-radius: 6px;
+            color: var(--gold);
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-top: 0.5rem;
+        }
+
+        .ai-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy-dark) 100%);
+            transform: translateY(-2px);
+        }
+
+        .ai-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid var(--gold);
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--burgundy) 0%, var(--burgundy-dark) 100%);
+            color: var(--gold);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(139, 21, 56, 0.6);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--gold);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(212, 175, 55, 0.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: rgba(212, 175, 55, 0.6);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            font-style: italic;
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 3rem;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .add-button {
+                bottom: 1rem;
+                right: 1rem;
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(212, 175, 55, 0.3);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Backend API URL
+        const API_URL = 'https://side-quest-backend-opis.onrender.com';
+
+        // API helper functions
+        const loadCards = async () => {
+            try {
+                const response = await fetch(`${API_URL}/cards`);
+                if (!response.ok) throw new Error('Failed to fetch cards');
+                const cards = await response.json();
+                // Convert snake_case from backend to camelCase for frontend
+                return cards.map(card => ({
+                    id: card.id,
+                    businessName: card.business_name,
+                    employeeName: card.employee_name,
+                    description: card.description,
+                    coverImage: card.cover_image_url,
+                    productImages: card.product_image_urls || [],
+                    createdAt: card.created_at,
+                    expiresAt: card.expires_at
+                }));
+            } catch (error) {
+                console.error('Error loading cards:', error);
+                return [];
+            }
+        };
+
+        const addCard = async (cardData) => {
+            try {
+                const formData = new FormData();
+                formData.append('businessName', cardData.businessName);
+                formData.append('employeeName', cardData.employeeName);
+                formData.append('description', cardData.description);
+                
+                if (cardData.coverImageFile) {
+                    formData.append('coverImage', cardData.coverImageFile);
+                }
+                
+                if (cardData.productImageFiles && cardData.productImageFiles.length > 0) {
+                    cardData.productImageFiles.forEach(file => {
+                        formData.append('productImages', file);
+                    });
+                }
+
+                const response = await fetch(`${API_URL}/cards`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Failed to create card');
+                const card = await response.json();
+                
+                // Convert to frontend format
+                return {
+                    id: card.id,
+                    businessName: card.business_name,
+                    employeeName: card.employee_name,
+                    description: card.description,
+                    coverImage: card.cover_image_url,
+                    productImages: card.product_image_urls || [],
+                    createdAt: card.created_at,
+                    expiresAt: card.expires_at
+                };
+            } catch (error) {
+                console.error('Error adding card:', error);
+                throw error;
+            }
+        };
+
+        // Components
+        function Card({ card, onClick }) {
+            const daysRemaining = Math.ceil((new Date(card.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+            
+            return (
+                <div className="card" onClick={onClick}>
+                    {card.coverImage && (
+                        <img 
+                            src={card.coverImage} 
+                            alt={card.businessName} 
+                            className="card-image"
+                        />
+                    )}
+                    {!card.coverImage && (
+                        <div className="card-image" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '3rem',
+                            color: 'var(--gold)'
+                        }}>
+                            ✦
+                        </div>
+                    )}
+                    <div className="card-content">
+                        <h3 className="card-title">{card.businessName}</h3>
+                        <p className="card-employee">by {card.employeeName}</p>
+                        <p className="card-description">{card.description}</p>
+                        <p className="card-expiry">Expires in {daysRemaining} days</p>
+                    </div>
+                </div>
+            );
+        }
+
+        function CardModal({ card, onClose }) {
+            const [currentImageIndex, setCurrentImageIndex] = useState(0);
+            
+            // Build images array: cover image first, then product images
+            const images = [];
+            if (card.coverImage) images.push(card.coverImage);
+            if (card.productImages && card.productImages.length > 0) images.push(...card.productImages);
+
+            const nextImage = () => setCurrentImageIndex((prev) => (prev + 1) % images.length);
+            const prevImage = () => setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+
+            useEffect(() => {
+                const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
+                window.addEventListener('keydown', handleEscape);
+                return () => window.removeEventListener('keydown', handleEscape);
+            }, [onClose]);
+
+            const currentImg = images[currentImageIndex];
+
+            return (
+                <div className="modal" onClick={onClose}>
+                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={onClose}>×</button>
+
+                        {/* Left: image carousel panel */}
+                        <div className="modal-carousel-panel">
+                            {currentImg && (
+                                <>
+                                    {/* Blurred backdrop */}
+                                    <div
+                                        className="carousel-backdrop"
+                                        style={{ backgroundImage: `url(${currentImg})` }}
+                                    />
+                                    {/* Actual image */}
+                                    <img
+                                        src={currentImg}
+                                        alt={`${card.businessName} ${currentImageIndex + 1}`}
+                                        className="carousel-image"
+                                    />
+                                    {/* Click zones for navigation */}
+                                    {images.length > 1 && (
+                                        <>
+                                            <button className="carousel-arrow prev" onClick={(e) => { e.stopPropagation(); prevImage(); }}>&#8249;</button>
+                                            <button className="carousel-arrow next" onClick={(e) => { e.stopPropagation(); nextImage(); }}>&#8250;</button>
+                                            <div className="carousel-indicators">
+                                                {images.map((_, idx) => (
+                                                    <div
+                                                        key={idx}
+                                                        className={`carousel-indicator ${idx === currentImageIndex ? 'active' : ''}`}
+                                                        onClick={(e) => { e.stopPropagation(); setCurrentImageIndex(idx); }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Right: info panel */}
+                        <div className="modal-info-panel">
+                            <h2 className="modal-title">{card.businessName}</h2>
+                            <div className="modal-employee-pill">{card.employeeName}</div>
+                            <div className="modal-section-label">About the Quest</div>
+                            <p className="modal-description">{card.description}</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function FormModal({ onClose, onSubmit }) {
+            const [businessName, setBusinessName] = useState('');
+            const [employeeName, setEmployeeName] = useState('');
+            const [description, setDescription] = useState('');
+            const [coverImage, setCoverImage] = useState(null);
+            const [coverImageFile, setCoverImageFile] = useState(null);
+            const [productImages, setProductImages] = useState([]);
+            const [productImageFiles, setProductImageFiles] = useState([]);
+            const [isPolishing, setIsPolishing] = useState(false);
+            const [isSubmitting, setIsSubmitting] = useState(false);
+
+            const handleCoverImageChange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setCoverImageFile(file);
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setCoverImage(reader.result);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const handleProductImagesChange = (e) => {
+                const files = Array.from(e.target.files);
+                const remaining = 10 - productImages.length;
+                const filesToAdd = files.slice(0, remaining);
+
+                setProductImageFiles(prev => [...prev, ...filesToAdd]);
+
+                filesToAdd.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setProductImages(prev => [...prev, reader.result]);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            };
+
+            const removeProductImage = (index) => {
+                setProductImages(prev => prev.filter((_, idx) => idx !== index));
+                setProductImageFiles(prev => prev.filter((_, idx) => idx !== index));
+            };
+
+            const handlePolish = async () => {
+                if (!description.trim()) return;
+                alert('AI polish feature coming soon!');
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!businessName.trim() || !employeeName.trim() || !description.trim()) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                setIsSubmitting(true);
+                try {
+                    await onSubmit({
+                        businessName: businessName.trim(),
+                        employeeName: employeeName.trim(),
+                        description: description.trim(),
+                        coverImageFile,
+                        productImageFiles
+                    });
+                } catch (error) {
+                    alert('Failed to submit quest. Please try again.');
+                    console.error('Submit error:', error);
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+
+            return (
+                <div className="modal" onClick={onClose}>
+                    <div className="modal-content form-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <button className="modal-close" onClick={onClose}>×</button>
+                        <form className="form-modal" onSubmit={handleSubmit}>
+                            <h2 className="form-title">Share Your Side Quest</h2>
+                            
+                            <div className="form-group">
+                                <label className="form-label">Business/Service Name *</label>
+                                <input 
+                                    type="text"
+                                    className="form-input"
+                                    value={businessName}
+                                    onChange={(e) => setBusinessName(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Your Name *</label>
+                                <input 
+                                    type="text"
+                                    className="form-input"
+                                    value={employeeName}
+                                    onChange={(e) => setEmployeeName(e.target.value)}
+                                    required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Description * (250 words max)</label>
+                                <textarea 
+                                    className="form-textarea"
+                                    value={description}
+                                    onChange={(e) => {
+                                        const words = e.target.value.trim().split(/\s+/);
+                                        if (words.length <= 250 || e.target.value.length < description.length) {
+                                            setDescription(e.target.value);
+                                        }
+                                    }}
+                                    required
+                                />
+                                <div className="char-count">
+                                    {description.trim().split(/\s+/).filter(w => w).length} / 250 words
+                                </div>
+                                <button 
+                                    type="button" 
+                                    className="ai-button"
+                                    onClick={handlePolish}
+                                    disabled={isPolishing || !description.trim()}
+                                >
+                                    {isPolishing ? <span className="spinner" /> : '✨'} Polish with AI
+                                </button>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Cover Image (square or 9:16)</label>
+                                <div className="file-upload">
+                                    <label className="file-input-label">
+                                        📸 Choose Cover Image
+                                        <input 
+                                            type="file"
+                                            className="file-input"
+                                            accept="image/*"
+                                            onChange={handleCoverImageChange}
+                                        />
+                                    </label>
+                                    {coverImage && (
+                                        <div className="file-preview">
+                                            <div className="file-preview-item">
+                                                <img src={coverImage} alt="Cover" className="file-preview-image" />
+                                                <button 
+                                                    type="button"
+                                                    className="file-remove"
+                                                    onClick={() => setCoverImage(null)}
+                                                >×</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Product/Service Images (up to 10)</label>
+                                <div className="file-upload">
+                                    <label className="file-input-label">
+                                        🖼️ Add Images ({productImages.length}/10)
+                                        <input 
+                                            type="file"
+                                            className="file-input"
+                                            accept="image/*"
+                                            multiple
+                                            onChange={handleProductImagesChange}
+                                            disabled={productImages.length >= 10}
+                                        />
+                                    </label>
+                                    {productImages.length > 0 && (
+                                        <div className="file-preview">
+                                            {productImages.map((img, idx) => (
+                                                <div key={idx} className="file-preview-item">
+                                                    <img src={img} alt={`Product ${idx + 1}`} className="file-preview-image" />
+                                                    <button 
+                                                        type="button"
+                                                        className="file-remove"
+                                                        onClick={() => removeProductImage(idx)}
+                                                    >×</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="form-actions">
+                                <button type="button" className="btn btn-secondary" onClick={onClose} disabled={isSubmitting}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                                    {isSubmitting ? 'Submitting...' : 'Submit Quest'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [cards, setCards] = useState([]);
+            const [selectedCard, setSelectedCard] = useState(null);
+            const [showForm, setShowForm] = useState(false);
+            const [isLoading, setIsLoading] = useState(true);
+
+            useEffect(() => {
+                const fetchCards = async () => {
+                    setIsLoading(true);
+                    const fetchedCards = await loadCards();
+                    setCards(fetchedCards);
+                    setIsLoading(false);
+                };
+                fetchCards();
+            }, []);
+
+            const handleSubmitCard = async (cardData) => {
+                try {
+                    const newCard = await addCard(cardData);
+                    setCards([newCard, ...cards]);
+                    setShowForm(false);
+                } catch (error) {
+                    // Error already logged in addCard
+                    throw error;
+                }
+            };
+
+            return (
+                <>
+                    <header className="header">
+                        <div className="header-content">
+                            <img src="./mtlogo_long.png" alt="Musictoday" className="logo" />
+                        </div>
+                    </header>
+
+                    <div className="hero">
+                        <h1 className="hero-title">Side Quest</h1>
+                        <p className="hero-subtitle">Discover the talents of our fellowship</p>
+                    </div>
+
+                    <div className="container">
+                        {isLoading ? (
+                            <div className="empty-state">
+                                Loading quests...
+                            </div>
+                        ) : cards.length === 0 ? (
+                            <div className="empty-state">
+                                No quests have been posted yet. Be the first to share your adventure!
+                            </div>
+                        ) : (
+                            <div className="cards-grid">
+                                {cards.map((card) => (
+                                    <Card 
+                                        key={card.id} 
+                                        card={card} 
+                                        onClick={() => setSelectedCard(card)}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <button 
+                        className="add-button"
+                        onClick={() => setShowForm(true)}
+                        title="Add your side quest"
+                    >
+                        +
+                    </button>
+
+                    {selectedCard && (
+                        <CardModal 
+                            card={selectedCard} 
+                            onClose={() => setSelectedCard(null)}
+                        />
+                    )}
+
+                    {showForm && (
+                        <FormModal 
+                            onClose={() => setShowForm(false)}
+                            onSubmit={handleSubmitCard}
+                        />
+                    )}
+                </>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
