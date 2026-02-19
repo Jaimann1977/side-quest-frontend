@@ -158,7 +158,7 @@
 
         .cards-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(214px, 1fr));
             gap: 2rem;
             margin-top: 2rem;
         }
@@ -218,6 +218,24 @@
             color: var(--gold-light);
             margin-bottom: 1rem;
             font-style: italic;
+        }
+
+        .card-link {
+            display: inline-block;
+            font-size: 0.85rem;
+            color: var(--gold);
+            text-decoration: none;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gold);
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+        }
+
+        .card-link:hover {
+            background: var(--gold);
+            color: var(--charcoal);
+            transform: translateX(3px);
         }
 
         .card-description {
@@ -488,6 +506,25 @@
         .modal-employee-pill::before {
             content: '⚔';
             font-size: 0.8rem;
+        }
+
+        .modal-link {
+            display: inline-block;
+            font-size: 0.9rem;
+            color: var(--gold);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--gold);
+            padding: 0.5rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .modal-link:hover {
+            background: var(--gold);
+            color: var(--charcoal);
+            transform: translateX(3px);
         }
 
         .modal-section-label {
@@ -782,6 +819,7 @@
                     id: card.id,
                     businessName: card.business_name,
                     employeeName: card.employee_name,
+                    webpageUrl: card.webpage_url,
                     description: card.description,
                     coverImage: card.cover_image_url,
                     productImages: card.product_image_urls || [],
@@ -799,6 +837,7 @@
                 const formData = new FormData();
                 formData.append('businessName', cardData.businessName);
                 formData.append('employeeName', cardData.employeeName);
+                formData.append('webpageUrl', cardData.webpageUrl || '');
                 formData.append('description', cardData.description);
                 
                 if (cardData.coverImageFile) {
@@ -824,6 +863,7 @@
                     id: card.id,
                     businessName: card.business_name,
                     employeeName: card.employee_name,
+                    webpageUrl: card.webpage_url,
                     description: card.description,
                     coverImage: card.cover_image_url,
                     productImages: card.product_image_urls || [],
@@ -887,6 +927,17 @@
                     <div className="card-content">
                         <h3 className="card-title">{card.businessName}</h3>
                         <p className="card-employee">by {card.employeeName}</p>
+                        {card.webpageUrl && (
+                            <a 
+                                href={card.webpageUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="card-link"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                🔗 Visit Website
+                            </a>
+                        )}
                         <p className="card-description">{card.description}</p>
                         <p className="card-expiry">Expires in {daysRemaining} days</p>
                     </div>
@@ -957,6 +1008,16 @@
                         <div className="modal-info-panel">
                             <h2 className="modal-title">{card.businessName}</h2>
                             <div className="modal-employee-pill">{card.employeeName}</div>
+                            {card.webpageUrl && (
+                                <a 
+                                    href={card.webpageUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="modal-link"
+                                >
+                                    🔗 Visit Website
+                                </a>
+                            )}
                             <div className="modal-section-label">About the Quest</div>
                             <p className="modal-description">{card.description}</p>
                         </div>
@@ -968,6 +1029,7 @@
         function FormModal({ onClose, onSubmit }) {
             const [businessName, setBusinessName] = useState('');
             const [employeeName, setEmployeeName] = useState('');
+            const [webpageUrl, setWebpageUrl] = useState('');
             const [description, setDescription] = useState('');
             const [coverImage, setCoverImage] = useState(null);
             const [coverImageFile, setCoverImageFile] = useState(null);
@@ -1011,7 +1073,29 @@
 
             const handlePolish = async () => {
                 if (!description.trim()) return;
-                alert('AI polish feature coming soon!');
+                
+                setIsPolishing(true);
+                try {
+                    const response = await fetch(`${API_URL}/polish`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ description })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to polish description');
+                    }
+
+                    const data = await response.json();
+                    setDescription(data.polished);
+                } catch (error) {
+                    console.error('Polish error:', error);
+                    alert('Failed to polish description. Please try again.');
+                } finally {
+                    setIsPolishing(false);
+                }
             };
 
             const handleSubmit = async (e) => {
@@ -1026,6 +1110,7 @@
                     await onSubmit({
                         businessName: businessName.trim(),
                         employeeName: employeeName.trim(),
+                        webpageUrl: webpageUrl.trim(),
                         description: description.trim(),
                         coverImageFile,
                         productImageFiles
@@ -1046,13 +1131,24 @@
                             <h2 className="form-title">Share Your Side Quest</h2>
                             
                             <div className="form-group">
-                                <label className="form-label">Business/Service Name *</label>
+                                <label className="form-label">Business/Service/Event *</label>
                                 <input 
                                     type="text"
                                     className="form-input"
                                     value={businessName}
                                     onChange={(e) => setBusinessName(e.target.value)}
                                     required
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Webpage URL (Optional)</label>
+                                <input 
+                                    type="url"
+                                    className="form-input"
+                                    value={webpageUrl}
+                                    onChange={(e) => setWebpageUrl(e.target.value)}
+                                    placeholder="https://example.com"
                                 />
                             </div>
 
