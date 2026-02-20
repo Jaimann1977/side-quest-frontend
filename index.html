@@ -552,6 +552,87 @@
             .modal-info-panel { border-left: none; border-top: 1px solid rgba(212,175,55,0.2); }
         }
 
+        /* Welcome Modal Styles */
+        .welcome-modal-content {
+            background: linear-gradient(135deg, rgba(26, 26, 26, 0.98), rgba(15, 15, 15, 0.98));
+            border: 2px solid var(--gold);
+            border-radius: 16px;
+            padding: 3rem;
+            max-width: 580px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 60px rgba(212, 175, 55, 0.3);
+        }
+
+        .welcome-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 1.5rem;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+        }
+
+        .welcome-subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            color: var(--gold-light);
+            margin-bottom: 2rem;
+            font-style: italic;
+        }
+
+        .welcome-text {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--cream);
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .welcome-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            color: var(--gold-light);
+            font-size: 0.95rem;
+        }
+
+        .welcome-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(212, 175, 55, 0.2);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .welcome-button {
+            background: linear-gradient(135deg, var(--gold), #c9a647);
+            color: var(--charcoal);
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .welcome-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+        }
+
+        .welcome-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .form-modal {
             padding: 2rem;
             overflow-y: auto;
@@ -1026,6 +1107,49 @@
             );
         }
 
+        function WelcomeModal({ onClose, isLoading }) {
+            return (
+                <div className="modal" onClick={onClose}>
+                    <div className="welcome-modal-content" onClick={(e) => e.stopPropagation()}>
+                        <h1 className="welcome-title">⚔️ SIDE QUEST ⚔️</h1>
+                        <p className="welcome-subtitle">Discover the talents of our fellowship</p>
+                        
+                        <div className="welcome-text">
+                            <p style={{ marginBottom: '1rem' }}>
+                                Welcome, adventurer! Side Quest is where the talented members of Musictoday 
+                                showcase their creative pursuits, side hustles, and share what's happening 
+                                in our music community.
+                            </p>
+                            <p style={{ marginBottom: '1rem' }}>
+                                From handcrafted goods and freelance services to local bands and upcoming 
+                                shows—discover what your colleagues are creating, promoting, and passionate 
+                                about beyond the office walls.
+                            </p>
+                            <p>
+                                Share your own side hustle, spread the word about your band, or let everyone 
+                                know about must-see events coming to town. Every quest has a story!
+                            </p>
+                        </div>
+
+                        {isLoading && (
+                            <div className="welcome-loading">
+                                <div className="welcome-spinner"></div>
+                                <span>Loading quests from the realm...</span>
+                            </div>
+                        )}
+
+                        <button 
+                            className="welcome-button" 
+                            onClick={onClose}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Please Wait...' : 'Begin Your Quest'}
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
         function FormModal({ onClose, onSubmit }) {
             const [businessName, setBusinessName] = useState('');
             const [employeeName, setEmployeeName] = useState('');
@@ -1272,6 +1396,7 @@
             const [selectedCard, setSelectedCard] = useState(null);
             const [showForm, setShowForm] = useState(false);
             const [isLoading, setIsLoading] = useState(true);
+            const [showWelcome, setShowWelcome] = useState(true);
             
             // Check for admin mode via URL parameter
             const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
@@ -1368,6 +1493,13 @@
                         <FormModal 
                             onClose={() => setShowForm(false)}
                             onSubmit={handleSubmitCard}
+                        />
+                    )}
+
+                    {showWelcome && (
+                        <WelcomeModal 
+                            onClose={() => setShowWelcome(false)}
+                            isLoading={isLoading}
                         />
                     )}
                 </>
