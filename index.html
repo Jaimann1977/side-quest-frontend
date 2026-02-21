@@ -84,36 +84,37 @@
             font-weight: 900;
             color: var(--gold);
             text-shadow: 
-                0 0 20px rgba(212, 175, 55, 1),
-                0 0 40px rgba(212, 175, 55, 0.8),
-                0 0 60px rgba(212, 175, 55, 0.6),
-                0 0 100px rgba(212, 175, 55, 0.4),
-                0 0 150px rgba(212, 175, 55, 0.2),
+                0 0 20px rgba(212, 175, 55, 0.8),
+                0 0 40px rgba(212, 175, 55, 0.5),
+                0 0 60px rgba(212, 175, 55, 0.3),
                 3px 3px 0 var(--burgundy-dark),
                 6px 6px 0 rgba(107, 15, 42, 0.5);
             letter-spacing: 4px;
             margin-bottom: 1rem;
-            animation: titleGlow 2s ease-in-out infinite alternate;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+            /* Force GPU acceleration for Chrome */
+            transform: translateZ(0);
+            will-change: filter;
         }
 
         @keyframes titleGlow {
             from {
+                filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.4))
+                        drop-shadow(0 0 30px rgba(212, 175, 55, 0.2));
                 text-shadow: 
-                    0 0 20px rgba(212, 175, 55, 1),
-                    0 0 40px rgba(212, 175, 55, 0.8),
-                    0 0 60px rgba(212, 175, 55, 0.6),
-                    0 0 100px rgba(212, 175, 55, 0.4),
-                    0 0 150px rgba(212, 175, 55, 0.2),
+                    0 0 20px rgba(212, 175, 55, 0.8),
+                    0 0 40px rgba(212, 175, 55, 0.5),
+                    0 0 60px rgba(212, 175, 55, 0.3),
                     3px 3px 0 var(--burgundy-dark),
                     6px 6px 0 rgba(107, 15, 42, 0.5);
             }
             to {
+                filter: drop-shadow(0 0 25px rgba(212, 175, 55, 0.6))
+                        drop-shadow(0 0 50px rgba(212, 175, 55, 0.4));
                 text-shadow: 
                     0 0 30px rgba(212, 175, 55, 1),
-                    0 0 60px rgba(212, 175, 55, 1),
-                    0 0 100px rgba(212, 175, 55, 0.8),
-                    0 0 150px rgba(212, 175, 55, 0.6),
-                    0 0 200px rgba(212, 175, 55, 0.4),
+                    0 0 60px rgba(212, 175, 55, 0.6),
+                    0 0 80px rgba(212, 175, 55, 0.4),
                     3px 3px 0 var(--burgundy-dark),
                     6px 6px 0 rgba(107, 15, 42, 0.5);
             }
