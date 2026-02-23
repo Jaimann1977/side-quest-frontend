@@ -94,8 +94,31 @@
             filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4));
             letter-spacing: 4px;
             margin-bottom: 1rem;
-            animation: titleGlow 3s ease-in-out infinite alternate;
+            animation: titleGlow 3s ease-in-out infinite alternate, titleFadeIn 0.8s ease-out;
             transform: translateZ(0);
+        }
+
+        .animated-title-container {
+            margin-bottom: 1rem;
+            animation: titleFadeOut 0.5s ease-out 2s forwards;
+        }
+
+        @keyframes titleFadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes titleFadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
         }
 
         @keyframes titleGlow {
@@ -308,6 +331,36 @@
             background: var(--burgundy-dark);
             transform: scale(1.1) rotate(90deg);
             box-shadow: 0 4px 12px rgba(139, 21, 56, 0.8);
+        }
+
+        .card-admin-buttons {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            display: flex;
+            gap: 0.5rem;
+            z-index: 10;
+        }
+
+        .card-edit-btn {
+            width: 36px;
+            height: 36px;
+            background: rgba(212, 175, 55, 0.95);
+            border: 2px solid var(--burgundy);
+            border-radius: 50%;
+            color: var(--burgundy-dark);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .card-edit-btn:hover {
+            background: var(--gold);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(212, 175, 55, 0.8);
         }
 
         .admin-badge {
@@ -985,6 +1038,60 @@
             }
         };
 
+        const updateCard = async (cardId, cardData) => {
+            try {
+                const formData = new FormData();
+                formData.append('businessName', cardData.businessName);
+                formData.append('employeeName', cardData.employeeName);
+                formData.append('webpageUrl', cardData.webpageUrl || '');
+                formData.append('description', cardData.description);
+                
+                // Only append cover image if a new one was selected
+                if (cardData.coverImageFile) {
+                    formData.append('coverImage', cardData.coverImageFile);
+                }
+                
+                // Only append product images if new ones were added
+                if (cardData.productImageFiles && cardData.productImageFiles.length > 0) {
+                    cardData.productImageFiles.forEach(file => {
+                        formData.append('productImages', file);
+                    });
+                }
+
+                // Send existing images to preserve them
+                if (cardData.existingCoverImage) {
+                    formData.append('existingCoverImage', cardData.existingCoverImage);
+                }
+                if (cardData.existingProductImages && cardData.existingProductImages.length > 0) {
+                    formData.append('existingProductImages', JSON.stringify(cardData.existingProductImages));
+                }
+
+                const response = await fetch(`${API_URL}/cards/${cardId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Failed to update card');
+                const card = await response.json();
+                
+                // Convert to frontend format
+                return {
+                    id: card.id,
+                    businessName: card.business_name,
+                    employeeName: card.employee_name,
+                    webpageUrl: card.webpage_url,
+                    description: card.description,
+                    coverImage: card.cover_image_url,
+                    productImages: card.product_image_urls || [],
+                    createdAt: card.created_at,
+                    expiresAt: card.expires_at
+                };
+            } catch (error) {
+                console.error('Error updating card:', error);
+                throw error;
+            }
+        };
+
         const deleteCard = async (cardId) => {
             try {
                 const response = await fetch(`${API_URL}/cards/${cardId}`, {
@@ -1000,7 +1107,7 @@
         };
 
         // Components
-        function Card({ card, onClick, isAdminMode, onDelete }) {
+        function Card({ card, onClick, isAdminMode, onDelete, onEdit }) {
             const daysRemaining = Math.ceil((new Date(card.expiresAt).getTime() - Date.now()) / (24 * 60 * 60 * 1000));
             
             const handleDelete = (e) => {
@@ -1009,11 +1116,19 @@
                     onDelete(card.id);
                 }
             };
+
+            const handleEdit = (e) => {
+                e.stopPropagation();
+                onEdit(card);
+            };
             
             return (
                 <div className="card" onClick={onClick}>
                     {isAdminMode && (
-                        <button className="card-delete-btn" onClick={handleDelete}>×</button>
+                        <div className="card-admin-buttons">
+                            <button className="card-edit-btn" onClick={handleEdit} title="Edit">✏️</button>
+                            <button className="card-delete-btn" onClick={handleDelete} title="Delete">×</button>
+                        </div>
                     )}
                     {card.coverImage && (
                         <img 
@@ -1178,7 +1293,7 @@
             );
         }
 
-        function FormModal({ onClose, onSubmit }) {
+        function FormModal({ onClose, onSubmit, editCard = null }) {
             const [businessName, setBusinessName] = useState('');
             const [employeeName, setEmployeeName] = useState('');
             const [webpageUrl, setWebpageUrl] = useState('');
@@ -1187,8 +1302,22 @@
             const [coverImageFile, setCoverImageFile] = useState(null);
             const [productImages, setProductImages] = useState([]);
             const [productImageFiles, setProductImageFiles] = useState([]);
+            const [existingProductImages, setExistingProductImages] = useState([]);
             const [isPolishing, setIsPolishing] = useState(false);
             const [isSubmitting, setIsSubmitting] = useState(false);
+
+            // Pre-populate fields if editing
+            useEffect(() => {
+                if (editCard) {
+                    setBusinessName(editCard.businessName);
+                    setEmployeeName(editCard.employeeName);
+                    setWebpageUrl(editCard.webpageUrl || '');
+                    setDescription(editCard.description);
+                    setCoverImage(editCard.coverImage);
+                    setExistingProductImages(editCard.productImages || []);
+                    setProductImages(editCard.productImages || []);
+                }
+            }, [editCard]);
 
             const handleCoverImageChange = (e) => {
                 const file = e.target.files[0];
@@ -1204,7 +1333,8 @@
 
             const handleProductImagesChange = (e) => {
                 const files = Array.from(e.target.files);
-                const remaining = 10 - productImages.length;
+                const currentCount = productImages.length;
+                const remaining = 10 - currentCount;
                 const filesToAdd = files.slice(0, remaining);
 
                 setProductImageFiles(prev => [...prev, ...filesToAdd]);
@@ -1219,6 +1349,13 @@
             };
 
             const removeProductImage = (index) => {
+                const imageUrl = productImages[index];
+                
+                // If it's an existing image (URL string), remove from existing
+                if (typeof imageUrl === 'string' && imageUrl.startsWith('http')) {
+                    setExistingProductImages(prev => prev.filter(url => url !== imageUrl));
+                }
+                
                 setProductImages(prev => prev.filter((_, idx) => idx !== index));
                 setProductImageFiles(prev => prev.filter((_, idx) => idx !== index));
             };
@@ -1265,14 +1402,22 @@
 
                 setIsSubmitting(true);
                 try {
-                    await onSubmit({
+                    const submitData = {
                         businessName: businessName.trim(),
                         employeeName: employeeName.trim(),
                         webpageUrl: finalUrl,
                         description: description.trim(),
                         coverImageFile,
                         productImageFiles
-                    });
+                    };
+
+                    // If editing, include existing images
+                    if (editCard) {
+                        submitData.existingCoverImage = coverImageFile ? null : (editCard.coverImage || null);
+                        submitData.existingProductImages = existingProductImages;
+                    }
+
+                    await onSubmit(submitData, editCard ? editCard.id : null);
                 } catch (error) {
                     alert('Failed to submit quest. Please try again.');
                     console.error('Submit error:', error);
@@ -1286,7 +1431,7 @@
                     <div className="modal-content form-modal-content" onClick={(e) => e.stopPropagation()}>
                         <button className="modal-close" onClick={onClose}>×</button>
                         <form className="form-modal" onSubmit={handleSubmit}>
-                            <h2 className="form-title">Share Your Side Quest</h2>
+                            <h2 className="form-title">{editCard ? 'Edit Your Side Quest' : 'Share Your Side Quest'}</h2>
                             
                             <div className="form-group">
                                 <label className="form-label">Business/Service/Event *</label>
@@ -1410,7 +1555,7 @@
                                     Cancel
                                 </button>
                                 <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                                    {isSubmitting ? 'Submitting...' : 'Submit Quest'}
+                                    {isSubmitting ? (editCard ? 'Updating...' : 'Submitting...') : (editCard ? 'Update Quest' : 'Submit Quest')}
                                 </button>
                             </div>
                         </form>
@@ -1423,8 +1568,11 @@
             const [cards, setCards] = useState([]);
             const [selectedCard, setSelectedCard] = useState(null);
             const [showForm, setShowForm] = useState(false);
+            const [editingCard, setEditingCard] = useState(null);
             const [isLoading, setIsLoading] = useState(true);
             const [showWelcome, setShowWelcome] = useState(true);
+            const [showTitleAnimation, setShowTitleAnimation] = useState(false);
+            const [showRealTitle, setShowRealTitle] = useState(false);
             
             // Check for admin mode via URL parameter
             const isAdminMode = new URLSearchParams(window.location.search).get('admin') === 'true';
@@ -1439,13 +1587,21 @@
                 fetchCards();
             }, []);
 
-            const handleSubmitCard = async (cardData) => {
+            const handleSubmitCard = async (cardData, cardId = null) => {
                 try {
-                    const newCard = await addCard(cardData);
-                    setCards([newCard, ...cards]);
+                    if (cardId) {
+                        // Update existing card
+                        const updatedCard = await updateCard(cardId, cardData);
+                        setCards(cards.map(card => card.id === cardId ? updatedCard : card));
+                        setEditingCard(null);
+                    } else {
+                        // Create new card
+                        const newCard = await addCard(cardData);
+                        setCards([newCard, ...cards]);
+                    }
                     setShowForm(false);
                 } catch (error) {
-                    // Error already logged in addCard
+                    // Error already logged in addCard/updateCard
                     throw error;
                 }
             };
@@ -1457,6 +1613,11 @@
                 } catch (error) {
                     alert('Failed to delete card. Please try again.');
                 }
+            };
+
+            const handleEditCard = (card) => {
+                setEditingCard(card);
+                setShowForm(true);
             };
 
             return (
@@ -1474,7 +1635,76 @@
                     </header>
 
                     <div className="hero">
-                        <h1 className="hero-title">Side Quest</h1>
+                        {showTitleAnimation && (
+                            <div className="animated-title-container">
+                                <svg width="800" height="140" viewBox="0 0 800 140" xmlns="http://www.w3.org/2000/svg" style={{maxWidth: '90%', height: 'auto', margin: '0 auto', display: 'block'}}>
+                                  <defs>
+                                    <style>{`
+                                      @keyframes titleReveal {
+                                        0% { opacity: 0; transform: scale(0.95); }
+                                        20% { opacity: 1; transform: scale(1); }
+                                        100% { opacity: 1; transform: scale(1); }
+                                      }
+                                      @keyframes shadowBuild {
+                                        0% { flood-opacity: 0; }
+                                        30% { flood-opacity: 0; }
+                                        60% { flood-opacity: 1; }
+                                        100% { flood-opacity: 1; }
+                                      }
+                                      @keyframes glowBuild {
+                                        0% { stdDeviation: 0; }
+                                        40% { stdDeviation: 0; }
+                                        70% { stdDeviation: 8; }
+                                        85% { stdDeviation: 12; }
+                                        100% { stdDeviation: 10; }
+                                      }
+                                      #titleGroup { animation: titleReveal 2.5s ease-out forwards; }
+                                      #shadowFlood { animation: shadowBuild 2.5s ease-out forwards; }
+                                      #glowBlur { animation: glowBuild 2.5s ease-out forwards; }
+                                    `}</style>
+                                    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+                                      <feFlood id="shadowFlood" floodColor="#6B0F2A" floodOpacity="0"/>
+                                      <feComposite in2="SourceAlpha" operator="in"/>
+                                      <feOffset dx="3" dy="3" result="shadow1"/>
+                                      <feFlood floodColor="#6B0F2A" floodOpacity="0.5"/>
+                                      <feComposite in2="SourceAlpha" operator="in"/>
+                                      <feOffset dx="6" dy="6" result="shadow2"/>
+                                      <feMerge>
+                                        <feMergeNode in="shadow2"/>
+                                        <feMergeNode in="shadow1"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                      </feMerge>
+                                    </filter>
+                                    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%">
+                                      <feGaussianBlur id="glowBlur" in="SourceGraphic" stdDeviation="0" result="blur"/>
+                                      <feFlood floodColor="#D4AF37" floodOpacity="0.8"/>
+                                      <feComposite in2="blur" operator="in" result="glow1"/>
+                                      <feGaussianBlur in="SourceGraphic" stdDeviation="0" result="blur2"/>
+                                      <feFlood floodColor="#D4AF37" floodOpacity="0.5"/>
+                                      <feComposite in2="blur2" operator="in" result="glow2"/>
+                                      <feGaussianBlur in="SourceGraphic" stdDeviation="0" result="blur3"/>
+                                      <feFlood floodColor="#D4AF37" floodOpacity="0.3"/>
+                                      <feComposite in2="blur3" operator="in" result="glow3"/>
+                                      <feMerge>
+                                        <feMergeNode in="glow3"/>
+                                        <feMergeNode in="glow2"/>
+                                        <feMergeNode in="glow1"/>
+                                        <feMergeNode in="SourceGraphic"/>
+                                      </feMerge>
+                                    </filter>
+                                  </defs>
+                                  <g id="titleGroup" transform="translate(32, 28)">
+                                    <g filter="url(#dropShadow) url(#glow)">
+                                      <path fill="#D4AF37" stroke="none" d="M 358.512 82.098 L 358.512 80.978 Q 370.832 80.978 380.912 72.69 Q 385.84 68.546 389.2 61.49 Q 393.12 52.978 393.12 42.114 Q 393.12 29.122 387.52 18.818 Q 384.384 13.218 379.12 9.634 Q 373.184 5.49 365.344 5.49 Q 354.704 5.49 347.144 14.394 Q 339.584 23.298 339.584 41.218 Q 339.584 53.65 343.84 61.602 Q 348.544 70.45 358.512 70.45 Q 362.992 70.45 366.24 68.546 Q 372.4 65.074 373.184 56.338 L 374.416 56.226 Q 374.528 57.57 374.528 60.258 Q 374.528 62.946 373.184 66.53 Q 369.824 75.714 356.72 75.714 Q 353.248 75.714 348.88 74.93 Q 334.432 72.242 324.968 62.89 Q 315.504 53.538 315.504 39.538 Q 315.504 31.362 319.088 24.082 Q 326.48 8.85 345.408 2.914 Q 354.816 0.002 366.128 0.002 Q 389.088 0.002 403.088 11.314 Q 417.088 22.626 417.088 40.546 Q 417.088 48.834 413.896 56.17 Q 410.704 63.506 405.216 68.77 Q 393.904 79.746 378.112 82.546 Q 397.712 84.786 416.024 88.314 Q 434.336 91.842 438.144 92.57 Q 441.952 93.298 448.784 94.306 Q 459.984 96.098 467.32 96.098 Q 474.656 96.098 478.016 95.426 Q 486.528 93.858 491.12 89.938 L 491.904 90.274 Q 488.992 100.69 480.536 106.738 Q 472.08 112.786 460.432 113.906 Q 456.512 114.242 450.352 114.242 Q 444.192 114.242 432.768 112.282 Q 421.344 110.322 409.752 105.562 Q 398.16 100.802 358.512 82.098 Z M 215.712 79.41 L 217.168 79.41 Q 220.08 79.41 222.152 77.338 Q 224.224 75.266 224.336 72.354 L 224.336 10.306 Q 224.224 6.722 221.312 4.594 Q 219.52 3.25 217.168 3.25 L 215.712 3.25 L 215.712 2.13 L 265.328 2.13 Q 270.144 2.13 273.896 1.346 Q 277.648 0.562 278.656 0.114 L 278.656 23.186 L 277.536 23.186 L 277.536 22.29 Q 277.536 13.33 271.04 9.746 Q 267.904 7.954 263.536 7.842 L 247.296 7.842 L 247.296 39.09 L 259.504 39.09 Q 264.88 38.978 268.24 35.562 Q 271.6 32.146 271.6 26.77 L 271.6 26.322 L 272.72 26.322 L 272.72 57.458 L 271.6 57.458 L 271.6 56.898 Q 271.6 51.634 268.24 48.218 Q 264.88 44.802 259.616 44.69 L 247.296 44.69 L 247.296 74.818 L 261.072 74.818 Q 269.248 74.818 275.52 69.442 Q 281.792 64.066 284.368 54.546 L 285.488 54.546 L 281.232 80.53 L 215.712 80.53 L 215.712 79.41 Z M 515.312 79.41 L 516.768 79.41 Q 519.68 79.41 521.752 77.338 Q 523.824 75.266 523.936 72.354 L 523.936 10.306 Q 523.824 6.722 520.912 4.594 Q 519.12 3.25 516.768 3.25 L 515.312 3.25 L 515.312 2.13 L 564.928 2.13 Q 569.744 2.13 573.496 1.346 Q 577.248 0.562 578.256 0.114 L 578.256 23.186 L 577.136 23.186 L 577.136 22.29 Q 577.136 13.33 570.64 9.746 Q 567.504 7.954 563.136 7.842 L 546.896 7.842 L 546.896 39.09 L 559.104 39.09 Q 564.48 38.978 567.84 35.562 Q 571.2 32.146 571.2 26.77 L 571.2 26.322 L 572.32 26.322 L 572.32 57.458 L 571.2 57.458 L 571.2 56.898 Q 571.2 51.634 567.84 48.218 Q 564.48 44.802 559.216 44.69 L 546.896 44.69 L 546.896 74.818 L 560.672 74.818 Q 568.848 74.818 575.12 69.442 Q 581.392 64.066 583.968 54.546 L 585.088 54.546 L 580.832 80.53 L 515.312 80.53 L 515.312 79.41 Z M 5.936 46.594 L 6.944 47.378 Q 3.248 53.986 3.248 60.146 Q 3.248 67.762 7.056 73.586 Q 10.864 79.41 17.248 82.658 Q 23.632 85.906 30.296 85.906 Q 36.96 85.906 41.552 83.778 Q 46.144 81.65 48.272 78.066 Q 50.4 74.482 50.4 70.562 Q 50.4 66.642 47.6 62.554 Q 44.8 58.466 39.312 55.442 L 21.056 44.69 Q 7.168 36.514 7.168 23.634 Q 7.168 12.098 15.232 5.826 Q 21.952 0.562 33.488 0.562 Q 40.88 0.562 52.304 1.682 L 61.04 1.682 L 58.688 19.938 L 57.568 19.938 Q 57.568 13.778 52.752 9.97 Q 47.936 6.162 40.432 6.162 Q 32.928 6.162 28.896 8.738 Q 24.864 11.314 24.528 15.57 Q 24.192 18.482 26.096 20.498 Q 27.776 22.29 29.456 23.242 Q 31.136 24.194 32.48 24.978 Q 33.824 25.762 34.384 25.986 L 55.328 37.97 Q 62.384 41.89 66.304 47.714 Q 70.784 54.322 70.784 61.49 Q 70.784 66.306 68.656 71.738 Q 66.528 77.17 61.824 81.762 Q 57.12 86.354 49.728 89.266 Q 42.336 92.178 33.6 92.178 Q 24.864 92.178 17.92 89.378 Q 4.928 84.226 1.008 71.346 Q 0 67.874 0 64.85 Q 0 55.106 5.936 46.594 Z M 511.392 2.13 L 511.392 3.25 L 509.6 3.25 Q 507.248 3.25 505.512 4.762 Q 503.776 6.274 503.664 8.514 L 503.664 51.746 Q 503.664 65.97 494.872 74.034 Q 486.08 82.098 470.176 82.098 Q 450.016 82.098 440.048 74.258 Q 430.08 66.418 430.08 51.858 L 430.08 8.85 Q 430.08 6.386 428.344 4.818 Q 426.608 3.25 424.144 3.25 L 422.352 3.25 L 422.352 2.13 L 460.768 2.13 L 460.768 3.25 L 458.976 3.25 Q 456.512 3.25 454.832 4.762 Q 453.152 6.274 453.04 8.626 L 453.04 51.41 Q 453.04 63.17 458.416 69.778 Q 463.792 76.386 473.424 76.386 Q 483.056 76.386 488.488 70.17 Q 493.92 63.954 493.92 52.866 L 493.92 8.626 Q 493.808 6.274 492.128 4.762 Q 490.448 3.25 487.984 3.25 L 486.192 3.25 L 486.192 2.13 L 511.392 2.13 Z M 596.176 53.65 L 597.184 53.65 Q 597.072 54.322 597.072 55.106 Q 597.072 63.394 603.624 69.946 Q 610.176 76.498 621.488 76.498 Q 629.104 76.498 633.192 73.306 Q 637.28 70.114 637.28 66.026 Q 637.28 61.938 634.48 59.026 Q 631.68 56.114 625.408 53.202 L 607.152 44.69 Q 599.424 41.218 595.952 34.946 Q 593.152 30.018 593.152 24.082 Q 593.152 11.986 601.328 5.714 Q 608.16 0.562 619.472 0.562 Q 626.864 0.562 638.4 1.682 L 647.136 1.682 L 644.672 19.938 L 643.552 19.938 Q 643.552 13.778 638.736 9.97 Q 633.92 6.162 626.472 6.162 Q 619.024 6.162 614.936 8.738 Q 610.848 11.314 610.512 15.57 Q 610.064 20.834 617.232 24.53 Q 618.464 25.202 620.48 25.986 L 641.424 35.73 Q 654.416 41.666 654.416 55.218 Q 654.416 68.77 644.784 75.434 Q 635.152 82.098 619.136 82.098 Q 609.84 82.098 602.784 80.026 Q 595.728 77.954 592.592 74.818 Q 591.584 72.354 591.584 69.498 Q 591.584 66.642 592.032 63.954 Q 593.264 57.346 596.176 53.65 Z M 720.384 7.618 L 709.408 7.618 L 709.408 72.466 Q 709.52 75.378 711.592 77.394 Q 713.664 79.41 716.576 79.41 L 718.032 79.41 L 718.032 80.53 L 677.824 80.53 L 677.824 79.41 L 679.28 79.41 Q 682.192 79.41 684.264 77.394 Q 686.336 75.378 686.448 72.578 L 686.448 7.618 L 675.36 7.618 Q 668.64 7.73 664.832 11.594 Q 661.024 15.458 661.024 22.178 L 661.024 22.962 L 659.904 23.074 L 659.904 0.002 Q 661.472 0.674 665.56 1.346 Q 669.648 2.018 673.12 2.018 L 722.736 2.018 Q 726.208 2.018 730.24 1.346 Q 734.272 0.674 735.952 0.002 L 735.952 23.074 L 734.832 22.962 L 734.832 22.178 Q 734.832 13.106 728.112 9.41 Q 724.864 7.73 720.384 7.618 Z M 166.096 80.53 L 123.648 80.53 L 123.648 79.41 L 125.104 79.41 Q 128.016 79.41 130.088 77.338 Q 132.16 75.266 132.272 72.354 L 132.272 9.634 Q 132.272 6.946 130.088 5.098 Q 127.904 3.25 125.104 3.25 L 123.76 3.25 L 123.648 2.13 L 166.096 2.13 Q 187.152 2.13 198.968 12.49 Q 210.784 22.85 210.784 41.33 Q 210.784 59.81 198.968 70.17 Q 187.152 80.53 166.096 80.53 Z M 76.832 79.41 L 78.288 79.41 Q 81.2 79.41 83.272 77.338 Q 85.344 75.266 85.456 72.354 L 85.456 10.194 Q 85.344 7.282 83.272 5.266 Q 81.2 3.25 78.288 3.25 L 76.832 3.25 L 76.832 2.13 L 117.04 2.13 L 117.04 3.25 L 115.584 3.25 Q 112.672 3.25 110.6 5.266 Q 108.528 7.282 108.416 10.194 L 108.416 72.354 Q 108.416 75.266 110.544 77.338 Q 112.672 79.41 115.584 79.41 L 117.04 79.41 L 117.04 80.53 L 76.832 80.53 L 76.832 79.41 Z M 163.856 7.73 Q 174.272 7.73 180.208 16.634 Q 186.144 25.538 186.144 41.33 Q 186.144 57.122 180.208 66.026 Q 174.272 74.93 163.856 74.93 L 155.232 74.93 L 155.232 7.73 L 163.856 7.73 Z" vectorEffect="non-scaling-stroke"/>
+                                    </g>
+                                  </g>
+                                </svg>
+                            </div>
+                        )}
+                        
+                        {showRealTitle && (
+                            <h1 className="hero-title">Side Quest</h1>
+                        )}
                         
                         <div className="hero-characters">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" width="100%" height="100%">
@@ -1683,6 +1913,7 @@
                                         onClick={() => setSelectedCard(card)}
                                         isAdminMode={isAdminMode}
                                         onDelete={handleDeleteCard}
+                                        onEdit={handleEditCard}
                                     />
                                 ))}
                             </div>
@@ -1706,14 +1937,25 @@
 
                     {showForm && (
                         <FormModal 
-                            onClose={() => setShowForm(false)}
+                            onClose={() => {
+                                setShowForm(false);
+                                setEditingCard(null);
+                            }}
                             onSubmit={handleSubmitCard}
+                            editCard={editingCard}
                         />
                     )}
 
                     {showWelcome && (
                         <WelcomeModal 
-                            onClose={() => setShowWelcome(false)}
+                            onClose={() => {
+                                setShowWelcome(false);
+                                setShowTitleAnimation(true);
+                                setTimeout(() => {
+                                    setShowTitleAnimation(false);
+                                    setShowRealTitle(true);
+                                }, 2500);
+                            }}
                             isLoading={isLoading}
                         />
                     )}
