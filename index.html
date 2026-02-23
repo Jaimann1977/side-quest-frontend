@@ -333,16 +333,10 @@
             box-shadow: 0 4px 12px rgba(139, 21, 56, 0.8);
         }
 
-        .card-admin-buttons {
+        .card-edit-btn {
             position: absolute;
             top: 0.75rem;
-            right: 0.75rem;
-            display: flex;
-            gap: 0.5rem;
-            z-index: 10;
-        }
-
-        .card-edit-btn {
+            left: 0.75rem;
             width: 36px;
             height: 36px;
             background: rgba(212, 175, 55, 0.95);
@@ -355,6 +349,7 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.3s ease;
+            z-index: 10;
         }
 
         .card-edit-btn:hover {
@@ -1066,12 +1061,20 @@
                     formData.append('existingProductImages', JSON.stringify(cardData.existingProductImages));
                 }
 
+                console.log('Updating card:', cardId);
+                console.log('Existing product images:', cardData.existingProductImages);
+
                 const response = await fetch(`${API_URL}/cards/${cardId}`, {
                     method: 'PUT',
                     body: formData
                 });
 
-                if (!response.ok) throw new Error('Failed to update card');
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    console.error('Update failed:', response.status, errorData);
+                    throw new Error(errorData.error || 'Failed to update card');
+                }
+                
                 const card = await response.json();
                 
                 // Convert to frontend format
@@ -1125,10 +1128,10 @@
             return (
                 <div className="card" onClick={onClick}>
                     {isAdminMode && (
-                        <div className="card-admin-buttons">
+                        <>
                             <button className="card-edit-btn" onClick={handleEdit} title="Edit">✏️</button>
                             <button className="card-delete-btn" onClick={handleDelete} title="Delete">×</button>
-                        </div>
+                        </>
                     )}
                     {card.coverImage && (
                         <img 
